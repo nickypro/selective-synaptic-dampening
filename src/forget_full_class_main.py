@@ -15,14 +15,18 @@ import sys
 import argparse
 import time
 from datetime import datetime
+from copy import copy
 
 import numpy as np
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, ConcatDataset, dataset
+from torch.utils.data import Subset
 import torch.optim as optim
 import torchvision
 import torchvision.transforms as transforms
+
+print("torch.cuda.is_available()", torch.cuda.is_available())
 
 import models
 from unlearn import *
@@ -33,6 +37,12 @@ import models
 import conf
 from training_utils import *
 
+# import differently from huggingface
+from datasets import load_dataset
+from PIL import Image
+from torchvision import transforms
+
+print("--> End of imports")
 
 """
 Get Args
@@ -122,7 +132,9 @@ if args.gpu:
 root = "105_classes_pins_dataset" if args.dataset == "PinsFaceRecognition" else "./data"
 
 # Scale for ViT (faster training, better performance)
+print("-> loading datasets")
 img_size = 224 if args.net == "ViT" else 32
+
 trainset = getattr(datasets, args.dataset)(
     root=root, download=True, train=True, unlearning=True, img_size=img_size
 )
@@ -130,31 +142,53 @@ validset = getattr(datasets, args.dataset)(
     root=root, download=True, train=False, unlearning=True, img_size=img_size
 )
 
-# Set up the dataloaders and prepare the datasets
-trainloader = DataLoader(trainset, num_workers=4, batch_size=args.b, shuffle=True)
-validloader = DataLoader(validset, num_workers=4, batch_size=args.b, shuffle=False)
 
-classwise_train, classwise_test = forget_full_class_strategies.get_classwise_ds(
-    trainset, args.classes
-), forget_full_class_strategies.get_classwise_ds(validset, args.classes)
+print("-->get forget retain subsets")
+def filter_dataset(dataset, criterion):
+    indices = []
+    not_indices = []
 
-(
-    retain_train,
-    retain_valid,
-    forget_train,
-    forget_valid,
-) = forget_full_class_strategies.build_retain_forget_sets(
-    classwise_train, classwise_test, args.classes, forget_class
-)
+    for i, data in enumerate(dataset):
+        if i >= len(dataset):
+            print("number too large:", i)
+            continue
+
+        if criterion(data):
+            indices.append(i)
+        else:
+            not_indices.append(i)
+
+    return indices, not_indices
+
+def get_subsets(dataset, criterion):
+    indices, non_indices = filter_dataset(trainset, criterion)
+    subset = Subset(dataset, indices)
+    non_subset = Subset(dataset, non_indices)
+    return subset, non_subset
+
+forget_train, retain_train = get_subsets(copy(trainset), lambda x: x[2] == forget_class)
+forget_valid, retain_valid = get_subsets(copy(validset), lambda x: x[2] == forget_class)
+
+
+print("--> combining into dataloader")
 forget_valid_dl = DataLoader(forget_valid, batch_size)
 retain_valid_dl = DataLoader(retain_valid, batch_size)
+validloader = DataLoader(validset, batch_size)
 
 forget_train_dl = DataLoader(forget_train, batch_size)
 retain_train_dl = DataLoader(retain_train, batch_size, shuffle=True)
+
+print(len(forget_train_dl.dataset))
+print(len(retain_train_dl.dataset))
 full_train_dl = DataLoader(
     ConcatDataset((retain_train_dl.dataset, forget_train_dl.dataset)),
     batch_size=batch_size,
 )
+
+print(len(forget_valid_dl), "forget_valid_dl")
+print(len(retain_valid_dl), "retain_valid_dl")
+
+print("--> end of dataloading")
 
 # Change alpha here as described in the paper
 # For PinsFaceRe-cognition, we use α=50 and λ=0.1
@@ -185,13 +219,16 @@ kwargs = {
 # Logging
 wandb.init(
     project=f"R1_{args.net}_{args.dataset}_fullclass_{args.forget_class}",
+    entity="seperability",
     name=f"{args.method}",
 )
 
 # Time the method
 import time
 
+print("--> starting run")
 start = time.time()
+
 
 # executes the method passed via args
 testacc, retainacc, zrf, mia, d_f = getattr(forget_full_class_strategies, args.method)(

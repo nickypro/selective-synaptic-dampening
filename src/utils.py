@@ -51,7 +51,12 @@ def epoch_end(model, epoch, result):
 @torch.no_grad()
 def evaluate(model, val_loader, device):
     model.eval()
-    outputs = [validation_step(model, batch, device) for batch in val_loader]
+    outputs = []
+    print("--> Running Evaluate")
+    print(len(val_loader))
+    for i, batch in enumerate(val_loader):
+        print("batch", i)
+        outputs.append(validation_step(model, batch, device))
     return validation_epoch_end(model, outputs)
 
 

@@ -30,6 +30,26 @@ def get_classwise_ds(ds, num_classes):
         classwise_ds[clabel].append((img, label, clabel))
     return classwise_ds
 
+from torch.utils.data import Subset, DataLoader
+
+def get_classwise_dataloaders(dataset, num_classes, batch_size, num_workers=4, shuffle=True):
+    class_indices = {i: [] for i in range(num_classes)}
+
+    # Collect indices for each class
+    for idx, (_, _, clabel) in enumerate(dataset):
+        class_indices[clabel].append(idx)
+
+    # Create a DataLoader for each class
+    classwise_dataloaders = {}
+    for class_id, indices in class_indices.items():
+        class_subset = Subset(dataset, indices)
+        classwise_dataloaders[class_id] = DataLoader(
+            class_subset, batch_size=batch_size, num_workers=num_workers, shuffle=shuffle
+        )
+
+    return classwise_dataloaders
+
+
 
 # Creates datasets for method execution
 def build_retain_forget_sets(
@@ -194,8 +214,13 @@ def blindspot(
     student_model = deepcopy(model)
     KL_temperature = 1
     optimizer = torch.optim.Adam(student_model.parameters(), lr=0.0001)
-    retain_train_subset = random.sample(
-        retain_train_dl.dataset, int(0.3 * len(retain_train_dl.dataset))
+
+    # Get a random 30% subset of the train data
+    retain_train_data = retain_train_dl.dataset
+    data_indices = retain_train_data.indices
+    sampled_indices = random.sample(data_indices, int(0.3*len(data_indices)))
+    retain_train_subset = DataLoader(
+        Subset(retain_train_data.dataset, sampled_indices), batch_size=64, shuffle=True,
     )
 
     if kwargs["model_name"] == "ViT":
