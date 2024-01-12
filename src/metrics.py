@@ -20,7 +20,7 @@ def UnLearningScore(tmodel, gold_model, forget_dl, batch_size, device):
     gold_model_preds = []
     with torch.no_grad():
         for batch in forget_dl:
-            x, y, cy = batch
+            x, y = batch["img"], batch["fine_label"]
             x = x.to(device)
             model_output = tmodel(x)
             gold_model_output = gold_model(x)
@@ -43,6 +43,7 @@ def collect_prob(data_loader, model):
     prob = []
     with torch.no_grad():
         for batch in data_loader:
+
             batch = [tensor.to(next(model.parameters()).device) for tensor in batch]
             data, _, target = batch
             output = model(data)

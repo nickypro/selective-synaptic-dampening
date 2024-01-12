@@ -20,7 +20,8 @@ def training_step(model, batch, device):
 
 
 def validation_step(model, batch, device):
-    images, labels, clabels = batch
+    images, clabels = batch["img"], batch["coarse_label"]
+    #images, labels, clabels = batch
     images, clabels = images.to(device), clabels.to(device)
     out = model(images)  # Generate predictions
     loss = F.cross_entropy(out, clabels)  # Calculate loss
@@ -34,7 +35,6 @@ def validation_epoch_end(model, outputs):
     batch_accs = [x["Acc"] for x in outputs]
     epoch_acc = torch.stack(batch_accs).mean()  # Combine accuracies
     return {"Loss": epoch_loss.item(), "Acc": epoch_acc.item()}
-
 
 def epoch_end(model, epoch, result):
     print(
@@ -53,7 +53,6 @@ def evaluate(model, val_loader, device):
     model.eval()
     outputs = []
     print("--> Running Evaluate")
-    print(len(val_loader))
     for i, batch in enumerate(val_loader):
         print("batch", i)
         outputs.append(validation_step(model, batch, device))

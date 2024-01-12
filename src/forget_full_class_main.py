@@ -20,7 +20,7 @@ from copy import copy
 import numpy as np
 import torch
 import torch.nn as nn
-from torch.utils.data import DataLoader, ConcatDataset, dataset
+from torch.utils.data import Dataset, DataLoader, ConcatDataset, dataset
 from torch.utils.data import Subset
 import torch.optim as optim
 import torchvision
@@ -39,6 +39,7 @@ from training_utils import *
 
 # import differently from huggingface
 from datasets import load_dataset
+from cifar_classes import cifar_classes
 from PIL import Image
 from torchvision import transforms
 
@@ -132,43 +133,66 @@ if args.gpu:
 root = "105_classes_pins_dataset" if args.dataset == "PinsFaceRecognition" else "./data"
 
 # Scale for ViT (faster training, better performance)
-print("-> loading datasets")
+print("--> loading datasets")
 img_size = 224 if args.net == "ViT" else 32
 
-trainset = getattr(datasets, args.dataset)(
-    root=root, download=True, train=True, unlearning=True, img_size=img_size
-)
-validset = getattr(datasets, args.dataset)(
-    root=root, download=True, train=False, unlearning=True, img_size=img_size
-)
+# Load CIFAR-100 dataset
+dataset = load_dataset("cifar100", streaming=True)
+
+# Define a transform to resize the images
+img_size = 224 if args.net == "ViT" else 32
+transform = transforms.Compose([
+    transforms.Resize((img_size, img_size)),
+    transforms.ToTensor()
+])
+
+# Apply the transform to each image in the dataset
+def resize_images(example):
+    example['img'] = transform(example['img'])
+    return example
+
+dataset = dataset.map(resize_images)
+
+trainset = dataset["train"]
+validset = dataset["test"]
+
+#trainset = getattr(datasets, args.dataset)(
+#    root=root, download=True, train=True, unlearning=True, img_size=img_size
+#)
+#validset = getattr(datasets, args.dataset)(
+#    root=root, download=True, train=False, unlearning=True, img_size=img_size
+#)
+
+class CustomDataset(Dataset):
+    def __init__(self, iterable_dataset):
+        self.data = list(iterable_dataset)
+
+    def __len__(self):
+        return len(self.data)
+
+    def __getitem__(self, idx):
+        return self.data[idx]
+
+def create_data_loader(iterable_dataset, batch_size, shuffle=True):
+    custom_dataset = CustomDataset(iterable_dataset)
+    data_loader = DataLoader(custom_dataset, batch_size=batch_size, shuffle=shuffle)
+    return data_loader
 
 
-print("-->get forget retain subsets")
-def filter_dataset(dataset, criterion):
-    indices = []
-    not_indices = []
+print("--> get forget retain subsets")
+def split_dataset(dataset, label):
+    def forget_filter(example):
+        return example["fine_label"] == label
+    def retain_filter(example):
+        return example["fine_label"] != label
 
-    for i, data in enumerate(dataset):
-        if i >= len(dataset):
-            print("number too large:", i)
-            continue
+    forget_set = dataset.filter(forget_filter)
+    retain_set = dataset.filter(retain_filter)
 
-        if criterion(data):
-            indices.append(i)
-        else:
-            not_indices.append(i)
+    return forget_set, retain_set
 
-    return indices, not_indices
-
-def get_subsets(dataset, criterion):
-    indices, non_indices = filter_dataset(trainset, criterion)
-    subset = Subset(dataset, indices)
-    non_subset = Subset(dataset, non_indices)
-    return subset, non_subset
-
-forget_train, retain_train = get_subsets(copy(trainset), lambda x: x[2] == forget_class)
-forget_valid, retain_valid = get_subsets(copy(validset), lambda x: x[2] == forget_class)
-
+forget_valid, retain_valid = split_dataset(validset, forget_class)
+forget_train, retain_train = split_dataset(trainset, forget_class)
 
 print("--> combining into dataloader")
 forget_valid_dl = DataLoader(forget_valid, batch_size)
@@ -176,17 +200,14 @@ retain_valid_dl = DataLoader(retain_valid, batch_size)
 validloader = DataLoader(validset, batch_size)
 
 forget_train_dl = DataLoader(forget_train, batch_size)
-retain_train_dl = DataLoader(retain_train, batch_size, shuffle=True)
+retain_train_dl = DataLoader(retain_train, batch_size)
+#retain_train_dl = create_data_loader(retain_train, batch_size)
 
-print(len(forget_train_dl.dataset))
-print(len(retain_train_dl.dataset))
-full_train_dl = DataLoader(
-    ConcatDataset((retain_train_dl.dataset, forget_train_dl.dataset)),
-    batch_size=batch_size,
-)
-
-print(len(forget_valid_dl), "forget_valid_dl")
-print(len(retain_valid_dl), "retain_valid_dl")
+full_train_dl = DataLoader(trainset, batch_size)
+#full_train_dl = DataLoader(
+#    ConcatDataset((retain_train_dl.dataset, list(forget_train_dl.dataset))),
+#    batch_size=batch_size,
+#)
 
 print("--> end of dataloading")
 

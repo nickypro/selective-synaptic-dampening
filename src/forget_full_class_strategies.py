@@ -49,8 +49,6 @@ def get_classwise_dataloaders(dataset, num_classes, batch_size, num_workers=4, s
 
     return classwise_dataloaders
 
-
-
 # Creates datasets for method execution
 def build_retain_forget_sets(
     classwise_train, classwise_test, num_classes, forget_class
@@ -198,6 +196,35 @@ def finetune(
         device,
     )
 
+import torch
+from torch.utils.data import DataLoader, Subset
+import numpy as np
+
+def create_subset_dataloader(data_loader, subset_fraction=0.3):
+    """
+    Creates a DataLoader with a random subset of the original data.
+
+    Parameters:
+    data_loader (DataLoader): The original DataLoader.
+    subset_fraction (float): Fraction of the dataset to include in the subset.
+
+    Returns:
+    DataLoader: A DataLoader containing the subset of the original data.
+    """
+    # Get the original dataset from the DataLoader
+    original_dataset = data_loader.dataset
+
+    # Calculate the number of samples in the subset
+    subset_size = int(len(original_dataset) * subset_fraction)
+
+    # Generate random indices for the subset
+    subset_indices = torch.randperm(len(original_dataset))[:subset_size]
+
+    # Create a Subset and a new DataLoader
+    subset = Subset(original_dataset, subset_indices)
+    subset_loader = DataLoader(subset, batch_size=data_loader.batch_size, shuffle=True)
+
+    return subset_loader
 
 # Bad Teacher from https://github.com/vikram2000b/bad-teaching-unlearning
 def blindspot(
@@ -216,12 +243,7 @@ def blindspot(
     optimizer = torch.optim.Adam(student_model.parameters(), lr=0.0001)
 
     # Get a random 30% subset of the train data
-    retain_train_data = retain_train_dl.dataset
-    data_indices = retain_train_data.indices
-    sampled_indices = random.sample(data_indices, int(0.3*len(data_indices)))
-    retain_train_subset = DataLoader(
-        Subset(retain_train_data.dataset, sampled_indices), batch_size=64, shuffle=True,
-    )
+    retain_train_subset = create_subset_dataloader(retain_train_dl, subset_fraction=0.3)
 
     if kwargs["model_name"] == "ViT":
         b_s = 128  # lowered batch size from 256 (original) to fit into memory
