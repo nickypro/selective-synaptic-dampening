@@ -189,8 +189,19 @@ class ViT(nn.Module):
         self.base = m.vit
         self.final = m.classifier
         self.num_classes = num_classes
+        self.device = next(self.base.parameters()).device
+        print("DEVICE:", self.device)
+
+    def cuda(self, **kwargs):
+        new_self = super(ViT, self).cuda()
+        new_self.device = "cuda"
+        return new_self
 
     def forward(self, pixel_values):
+        #pixel_values = torch.tensor(np.array(
+        #    self.processor(img["pixel_values"])
+        #)).to(self.device)
+        pixel_values = pixel_values.to(self.device)
         outputs = self.base(pixel_values=pixel_values)
         logits = self.final(outputs.last_hidden_state[:, 0])
 

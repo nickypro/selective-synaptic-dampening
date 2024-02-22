@@ -1,10 +1,12 @@
+UNLEARNING_BATCH_SIZE = 32 # 128
+
 import random
 import numpy as np
 from typing import Tuple, List
 from copy import deepcopy
 
 import torch
-from torch.utils.data import DataLoader, ConcatDataset, dataset
+from torch.utils.data import DataLoader, ConcatDataset, dataset, IterableDataset
 import itertools
 
 from tqdm import tqdm
@@ -18,6 +20,7 @@ from utils import *
 import ssd as ssd
 import conf
 import timeit
+import math
 
 
 # Create datasets of the classes
@@ -92,10 +95,10 @@ def get_metric_scores(
     valid_dl,
     device,
 ):
-    #loss_acc_dict = evaluate(model, valid_dl, device)
-    #retain_acc_dict = evaluate(model, retain_valid_dl, device)
-    #zrf = UnLearningScore(model, unlearning_teacher, forget_valid_dl, 128, device)
-    #d_f = evaluate(model, forget_valid_dl, device)
+    loss_acc_dict = evaluate(model, valid_dl, device)
+    retain_acc_dict = evaluate(model, retain_valid_dl, device)
+    zrf = UnLearningScore(model, unlearning_teacher, forget_valid_dl, 128, device)
+    d_f = evaluate(model, forget_valid_dl, device)
     mia = get_membership_attack_prob(retain_train_dl, forget_train_dl, valid_dl, model)
 
     return (loss_acc_dict["Acc"], retain_acc_dict["Acc"], zrf, mia, d_f["Acc"])
@@ -222,7 +225,31 @@ def create_subset_dataloader(data_loader, subset_fraction=0.3):
 
     # Create a Subset and a new DataLoader
     subset = Subset(original_dataset, subset_indices)
+
+    return subset
     subset_loader = DataLoader(subset, batch_size=data_loader.batch_size, shuffle=True)
+
+    return subset_loader
+
+class RandomFractionStreamedDataset(IterableDataset):
+    def __init__(self, dataset, subset_fraction=0.3):
+        self.dataset = dataset
+        self.subset_fraction = subset_fraction
+
+    def __iter__(self):
+        for item in self.dataset:
+            if random.random() < self.subset_fraction:
+                yield item
+
+def create_iterable_subset_dataloader(original_data_loader, subset_fraction=0.3, batch_size=None):
+    if batch_size is None:
+        batch_size = original_data_loader.batch_size
+
+    # Wrap the original dataset with the RandomFractionStreamedDataset
+    subset_dataset = RandomFractionStreamedDataset(original_data_loader.dataset, subset_fraction)
+
+    # Create a new DataLoader for the subset dataset
+    subset_loader = DataLoader(subset_dataset, batch_size=batch_size, shuffle=False)  # Note: shuffle=False is necessary for IterableDataset
 
     return subset_loader
 
@@ -243,10 +270,16 @@ def blindspot(
     optimizer = torch.optim.Adam(student_model.parameters(), lr=0.0001)
 
     # Get a random 30% subset of the train data
-    retain_train_subset = create_subset_dataloader(retain_train_dl, subset_fraction=0.3)
+    retain_train_subset = retain_train_dl.dataset.random_subset(frac=0.3)
+    #retain_train_subset = create_subset_dataloader(retain_train_dl, subset_fraction=0.3)
+    print(len(retain_train_subset))
+    print(retain_train_subset[0])
+    #retain_train_subset = random.sample(
+    #    retain_train_dl.dataset, int(0.3 * len(retain_train_dl.dataset))
+    #)
 
     if kwargs["model_name"] == "ViT":
-        b_s = 128  # lowered batch size from 256 (original) to fit into memory
+        b_s = UNLEARNING_BATCH_SIZE  # lowered batch size from 256 (original) to fit into memory
     else:
         b_s = 256
 
@@ -302,7 +335,7 @@ def amnesiac(
         unlearning_trainset.append((x, _, y))
 
     unlearning_train_set_dl = DataLoader(
-        unlearning_trainset, 128, pin_memory=True, shuffle=True
+        unlearning_trainset, UNLEARNING_BATCH_SIZE, pin_memory=True, shuffle=True
     )
 
     _ = fit_one_unlearning_cycle(
@@ -671,7 +704,7 @@ def UNSIR(
         )
 
     heal_loader = torch.utils.data.DataLoader(
-        other_samples, batch_size=128, shuffle=True
+        other_samples, batch_size=UNLEARNING_BATCH_SIZE, shuffle=True
     )
     _ = fit_one_unlearning_cycle(
         1, model, heal_loader, retain_valid_dl, device=device, lr=0.0001

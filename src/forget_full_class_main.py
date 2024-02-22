@@ -138,28 +138,63 @@ print("--> loading datasets")
 img_size = 224 if args.net == "ViT" else 32
 
 # Load CIFAR-100 dataset
-dataset = load_dataset("cifar100", streaming=True)
+dataset = load_dataset("cifar100", streaming=False)
 
 # Define a transform to resize the images
-img_size = 224 if args.net == "ViT" else 32
-transform = transforms.Compose([
-    transforms.Resize((img_size, img_size)),
-    transforms.ToTensor()
-])
+#img_size = 224 if args.net == "ViT" else 32
+#transform = transforms.Compose([
+#    transforms.Resize((img_size, img_size)),
+#    transforms.ToTensor()
+#])
 
 # Apply the transform to each image in the dataset
 #def resize_images(example):
 #    example['img'] = transform(example['img'])
 #    return example
 
+
+class LazyTransformDataset(Dataset):
+    def __init__(self, hf_dataset, transform=None, indices=None):
+        self.hf_dataset = hf_dataset
+        self.transform = transform
+        self.indices = np.array(list(range(len(self.hf_dataset))) if indices is None else indices)
+
+
+    def __len__(self):
+        return len(self.indices)
+        #return len(self.hf_dataset)
+
+    def __getitem__(self, idx):
+        sub_index = self.indices[idx]
+        item = self.hf_dataset[int(sub_index)]
+        if self.transform:
+            item = self.transform(item)
+        return item
+
+    def filter(self, filter_func):
+        return LazyTransformDataset(
+            self.hf_dataset.filter(filter_func),
+            self.transform,
+        )
+
+    def random_subset(self, frac=0.3):
+        num_samples = int(frac * len(self))
+        new_indices = np.array(random.sample(sorted(self.indices), num_samples))
+        return LazyTransformDataset(
+            self.hf_dataset,
+            self.transform,
+            new_indices,
+        )
+
+
 def process_img(example):
     example['img'] = torch.tensor(net.processor(example['img'])["pixel_values"][0])
     return example
 
-dataset = dataset.map(process_img)
+#dataset = dataset.map(process_img)
 
-trainset = dataset["train"]
-validset = dataset["test"]
+trainset = LazyTransformDataset( dataset["train"], process_img)
+validset = LazyTransformDataset( dataset["test"],  process_img)
 
 #trainset = getattr(datasets, args.dataset)(
 #    root=root, download=True, train=True, unlearning=True, img_size=img_size
@@ -167,22 +202,6 @@ validset = dataset["test"]
 #validset = getattr(datasets, args.dataset)(
 #    root=root, download=True, train=False, unlearning=True, img_size=img_size
 #)
-
-class CustomDataset(Dataset):
-    def __init__(self, iterable_dataset):
-        self.data = list(iterable_dataset)
-
-    def __len__(self):
-        return len(self.data)
-
-    def __getitem__(self, idx):
-        return self.data[idx]
-
-def create_data_loader(iterable_dataset, batch_size, shuffle=True):
-    custom_dataset = CustomDataset(iterable_dataset)
-    data_loader = DataLoader(custom_dataset, batch_size=batch_size, shuffle=shuffle)
-    return data_loader
-
 
 print("--> get forget retain subsets")
 def split_dataset(dataset, label):

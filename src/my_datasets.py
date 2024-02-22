@@ -160,10 +160,10 @@ class UnLearningData(Dataset):
 
     def __getitem__(self, index):
         if index < self.forget_len:
-            x = self.forget_data[index][0]
+            x = self.forget_data[index]["img"]
             y = 1
             return x, y
         else:
-            x = self.retain_data[index - self.forget_len][0]
+            x = self.retain_data[index - self.forget_len]["img"]
             y = 0
             return x, y

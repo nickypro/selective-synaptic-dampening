@@ -20,9 +20,9 @@ def UnLearningScore(tmodel, gold_model, forget_dl, batch_size, device):
     model_preds = []
     gold_model_preds = []
     with torch.no_grad():
-        for batch in forget_dl:
-            x, y = batch["img"], batch["fine_label"]
-            x = x.to(device)
+        for batch in tqdm(forget_dl, "Getting ZRF score"):
+            #x, y = batch["img"], batch["fine_label"]
+            x = batch["img"]
             model_output = tmodel(x)
             gold_model_output = gold_model(x)
             model_preds.append(F.softmax(model_output, dim=1).detach().cpu())
@@ -42,11 +42,10 @@ def collect_prob(data_loader, model):
         data_loader.dataset, batch_size=1, shuffle=False
     )
     prob = []
-    device = next(model.parameters()).device
 
     with torch.no_grad():
-        for batch in tqdm(data_loader):
-            data = batch["img"].to(device)
+        for batch in tqdm(data_loader, desc="mia: collecting probs"):
+            data = batch["img"]
             #data = torch.stack([img.to(device) for (img, flabel, clabel) in batch])
             #batch = [tensor.to(next(model.parameters()).device) for tensor in batch]
             #data, _, target = batch
@@ -93,8 +92,8 @@ def actv_dist(model1, model2, dataloader, device="cuda"):
     sftmx = nn.Softmax(dim=1)
     distances = []
     for batch in dataloader:
-        x, _, _ = batch
-        x = x.to(device)
+        x = batch["img"]
+        #x = x.to(device)
         model1_out = model1(x)
         model2_out = model2(x)
         diff = torch.sqrt(

@@ -4,6 +4,7 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 from training_utils import *
+from tqdm import tqdm
 
 
 def accuracy(outputs, labels):
@@ -12,22 +13,20 @@ def accuracy(outputs, labels):
 
 
 def training_step(model, batch, device):
-    images, labels, clabels = batch
-    images = images.to(device)
-    clabels = clabels.to(device)
+    images  = batch["img"]
+    flabels = batch["fine_label"].to(device)
     out = model(images)  # Generate predictions
-    loss = F.cross_entropy(out, clabels)  # Calculate loss
+    loss = F.cross_entropy(out, flabels)  # Calculate loss
     return loss
 
 
 def validation_step(model, batch, device):
-    images, clabels = batch["img"], batch["coarse_label"]
     #images, labels, clabels = batch
-    images = images.to(device)
-    clabels = clabels.to(device)
+    images  = batch["img"]
+    flabels = batch["fine_label"].to(device)
     out = model(images)  # Generate predictions
-    loss = F.cross_entropy(out, clabels)  # Calculate loss
-    acc = accuracy(out, clabels)  # Calculate accuracy
+    loss = F.cross_entropy(out, flabels)  # Calculate loss
+    acc = accuracy(out, flabels)  # Calculate accuracy
     return {"Loss": loss.detach(), "Acc": acc}
 
 
@@ -55,8 +54,7 @@ def evaluate(model, val_loader, device):
     model.eval()
     outputs = []
     print("--> Running Evaluate")
-    for i, batch in enumerate(val_loader):
-        print("batch", i)
+    for i, batch in tqdm(enumerate(val_loader), desc="evaluating model"):
         outputs.append(validation_step(model, batch, device))
     return validation_epoch_end(model, outputs)
 
