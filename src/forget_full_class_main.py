@@ -120,10 +120,11 @@ batch_size = args.b
 
 # get network
 net = getattr(models, args.net)(num_classes=args.classes)
-net.load_state_dict(torch.load(args.weight_path))
+#net.load_state_dict(torch.load(args.weight_path))
+
 
 # for bad teacher
-unlearning_teacher = getattr(models, args.net)(num_classes=args.classes)
+unlearning_teacher = getattr(models, args.net)(num_classes=args.classes, random_init=True)
 
 if args.gpu:
     net = net.cuda()
@@ -147,11 +148,15 @@ transform = transforms.Compose([
 ])
 
 # Apply the transform to each image in the dataset
-def resize_images(example):
-    example['img'] = transform(example['img'])
+#def resize_images(example):
+#    example['img'] = transform(example['img'])
+#    return example
+
+def process_img(example):
+    example['img'] = torch.tensor(net.processor(example['img'])["pixel_values"][0])
     return example
 
-dataset = dataset.map(resize_images)
+dataset = dataset.map(process_img)
 
 trainset = dataset["train"]
 validset = dataset["test"]

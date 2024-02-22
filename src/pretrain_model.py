@@ -11,7 +11,9 @@ import torch.optim as optim
 import torchvision
 import torchvision.transforms as transforms
 
-import datasets
+from tqdm import tqdm
+
+import my_datasets
 import models
 import conf
 from training_utils import *
@@ -22,7 +24,7 @@ from training_utils import *
 def train(epochs):
     start = time.time()
     net.train()
-    for batch_index, (images, _, labels) in enumerate(trainloader):
+    for batch_index, (images, _, labels) in enumerate(tqdm(trainloader)):
         if args.gpu:
             labels = labels.cuda()
             images = images.cuda()
@@ -57,7 +59,7 @@ def eval_training(epoch=0, tb=True):
     test_loss = 0.0  # cost function error
     correct = 0.0
 
-    for images, _, labels in testloader:
+    for images, _, labels in tqdm(testloader):
         if args.gpu:
             images = images.cuda()
             labels = labels.cuda()
@@ -117,10 +119,10 @@ if args.gpu:
 root = "105_classes_pins_dataset" if args.dataset == "PinsFaceRecognition" else "./data"
 img_size = 224 if args.net == "ViT" else 32
 
-trainset = getattr(datasets, args.dataset)(
+trainset = getattr(my_datasets, args.dataset)(
     root=root, download=True, train=True, unlearning=False, img_size=img_size
 )
-testset = getattr(datasets, args.dataset)(
+testset = getattr(my_datasets, args.dataset)(
     root=root, download=True, train=False, unlearning=False, img_size=img_size
 )
 

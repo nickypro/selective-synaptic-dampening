@@ -161,13 +161,34 @@ class AllCNN(nn.Module):
         return output
 
 
+# class ViT(nn.Module):
+#     def __init__(self, num_classes=20, **kwargs):
+#         super(ViT, self).__init__()
+#         self.base = ViTModel.from_pretrained("google/vit-base-patch16-224")
+#         self.final = nn.Linear(self.base.config.hidden_size, num_classes)
+#         self.num_classes = num_classes
+#         self.relu = nn.ReLU()
+
+#     def forward(self, pixel_values):
+#         outputs = self.base(pixel_values=pixel_values)
+#         logits = self.final(outputs.last_hidden_state[:, 0])
+
+#         return logits
+
+from transformers import ViTForImageClassification, AutoImageProcessor
+
 class ViT(nn.Module):
-    def __init__(self, num_classes=20, **kwargs):
+    def __init__(self, num_classes=20, random_init:bool = False, **kwargs):
         super(ViT, self).__init__()
-        self.base = ViTModel.from_pretrained("google/vit-base-patch16-224")
-        self.final = nn.Linear(self.base.config.hidden_size, num_classes)
+        if random_init:
+            m = ViTForImageClassification.from_pretrained("nickypro/vit-cifar100-random-init")
+        else:
+            m = ViTForImageClassification.from_pretrained("nickypro/vit-cifar100")
+
+        self.processor = AutoImageProcessor.from_pretrained("nickypro/vit-cifar100")
+        self.base = m.vit
+        self.final = m.classifier
         self.num_classes = num_classes
-        self.relu = nn.ReLU()
 
     def forward(self, pixel_values):
         outputs = self.base(pixel_values=pixel_values)

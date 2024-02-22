@@ -7,6 +7,7 @@ import torch
 import numpy as np
 from sklearn.svm import SVC
 from sklearn.linear_model import LogisticRegression
+from tqdm import tqdm
 
 
 def JSDiv(p, q):
@@ -41,11 +42,14 @@ def collect_prob(data_loader, model):
         data_loader.dataset, batch_size=1, shuffle=False
     )
     prob = []
-    with torch.no_grad():
-        for batch in data_loader:
+    device = next(model.parameters()).device
 
-            batch = [tensor.to(next(model.parameters()).device) for tensor in batch]
-            data, _, target = batch
+    with torch.no_grad():
+        for batch in tqdm(data_loader):
+            data = batch["img"].to(device)
+            #data = torch.stack([img.to(device) for (img, flabel, clabel) in batch])
+            #batch = [tensor.to(next(model.parameters()).device) for tensor in batch]
+            #data, _, target = batch
             output = model(data)
             prob.append(F.softmax(output, dim=-1).data)
     return torch.cat(prob)

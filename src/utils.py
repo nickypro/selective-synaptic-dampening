@@ -13,7 +13,8 @@ def accuracy(outputs, labels):
 
 def training_step(model, batch, device):
     images, labels, clabels = batch
-    images, clabels = images.to(device), clabels.to(device)
+    images = images.to(device)
+    clabels = clabels.to(device)
     out = model(images)  # Generate predictions
     loss = F.cross_entropy(out, clabels)  # Calculate loss
     return loss
@@ -22,7 +23,8 @@ def training_step(model, batch, device):
 def validation_step(model, batch, device):
     images, clabels = batch["img"], batch["coarse_label"]
     #images, labels, clabels = batch
-    images, clabels = images.to(device), clabels.to(device)
+    images = images.to(device)
+    clabels = clabels.to(device)
     out = model(images)  # Generate predictions
     loss = F.cross_entropy(out, clabels)  # Calculate loss
     acc = accuracy(out, clabels)  # Calculate accuracy
