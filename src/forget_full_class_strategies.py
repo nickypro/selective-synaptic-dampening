@@ -29,8 +29,9 @@ def get_classwise_ds(ds, num_classes):
     for i in range(num_classes):
         classwise_ds[i] = []
 
-    for img, label, clabel in ds:
-        classwise_ds[clabel].append((img, label, clabel))
+    for item in ds:
+        label = item["fine_label"]
+        classwise_ds[label].append(item)
     return classwise_ds
 
 from torch.utils.data import Subset, DataLoader
@@ -328,11 +329,15 @@ def amnesiac(
 
     unlearninglabels.remove(forget_class)
 
-    for x, _, clabel in forget_train_dl.dataset:
-        unlearning_trainset.append((x, _, random.choice(unlearninglabels)))
+    for item in forget_train_dl.dataset:
+        unlearning_trainset.append({
+            "img": item["img"],
+            "coarse_label": item["coarse_label"],
+            "fine_label": random.choice(unlearninglabels)
+        })
 
-    for x, _, y in retain_train_dl.dataset:
-        unlearning_trainset.append((x, _, y))
+    for item in retain_train_dl.dataset:
+        unlearning_trainset.append(item)
 
     unlearning_train_set_dl = DataLoader(
         unlearning_trainset, UNLEARNING_BATCH_SIZE, pin_memory=True, shuffle=True

@@ -166,22 +166,18 @@ def UNSIR_create_noisy_loader(
     for i in range(num_noise_batches):
         batch = noise()
         for i in range(batch[0].size(0)):
-            noisy_data.append(
-                (
-                    batch[i].detach().cpu(),
-                    torch.tensor(forget_class_label),
-                    torch.tensor(forget_class_label),
-                )
-            )
+            noisy_data.append({
+                "img": batch[i].detach().cpu(),
+                "coarse_label": torch.tensor(forget_class_label),
+                "fine_label":   torch.tensor(forget_class_label),
+            })
     other_samples = []
     for i in range(len(retain_samples)):
-        other_samples.append(
-            (
-                retain_samples[i][0].cpu(),
-                torch.tensor(retain_samples[i][2]),
-                torch.tensor(retain_samples[i][2]),
-            )
-        )
+        other_samples.append({
+                "img": retain_samples["img"][i],
+                "fine_label":   torch.tensor(retain_samples["fine_label"][i]),
+                "coarse_label": torch.tensor(retain_samples["coarse_label"][i]),
+        })
     noisy_data += other_samples
     noisy_loader = DataLoader(noisy_data, batch_size=batch_size, shuffle=True)
 
