@@ -681,7 +681,7 @@ def UNSIR(
             retain_samples += classwise_train[i][:num_samples]
 
     forget_class_label = forget_class
-    img_shape = next(iter(retain_train_dl.dataset))[0].shape[-1]
+    img_shape = next(iter(retain_train_dl.dataset))["img"].shape[-1]
     noise = UNSIR_noise(noise_batch_size, 3, img_shape, img_shape).to(device)
     noise = UNSIR_noise_train(
         noise, model, forget_class_label, 25, noise_batch_size, device=device
@@ -700,13 +700,11 @@ def UNSIR(
     # repair step
     other_samples = []
     for i in range(len(retain_samples)):
-        other_samples.append(
-            (
-                retain_samples[i][0].cpu(),
-                torch.tensor(retain_samples[i][2]),
-                torch.tensor(retain_samples[i][2]),
-            )
-        )
+        other_samples.append({
+            "img": retain_samples[i]["img"],
+            "fine_label": torch.tensor(retain_samples[i]["fine_label"]),
+            "coarse_label": torch.tensor(retain_samples[i]["coarse_label"]),
+        })
 
     heal_loader = torch.utils.data.DataLoader(
         other_samples, batch_size=UNLEARNING_BATCH_SIZE, shuffle=True

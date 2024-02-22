@@ -174,9 +174,9 @@ def UNSIR_create_noisy_loader(
     other_samples = []
     for i in range(len(retain_samples)):
         other_samples.append({
-                "img": retain_samples["img"][i],
-                "fine_label":   torch.tensor(retain_samples["fine_label"][i]),
-                "coarse_label": torch.tensor(retain_samples["coarse_label"][i]),
+                "img": retain_samples[i]["img"],
+                "fine_label":   torch.tensor(retain_samples[i]["fine_label"]),
+                "coarse_label": torch.tensor(retain_samples[i]["coarse_label"]),
         })
     noisy_data += other_samples
     noisy_loader = DataLoader(noisy_data, batch_size=batch_size, shuffle=True)
