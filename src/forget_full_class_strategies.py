@@ -1,4 +1,4 @@
-UNLEARNING_BATCH_SIZE = 32 # 128
+UNLEARNING_BATCH_SIZE = 64 # 128
 
 import random
 import numpy as np
