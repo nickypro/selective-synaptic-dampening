@@ -84,6 +84,7 @@ parser.add_argument(
         "NTK",
         "ssd_tuning",
         "FisherForgetting",
+        "selective_pruning",
     ],
     help="select unlearning method from choice set",
 )

@@ -9,6 +9,7 @@ import torch
 from torchvision.models import resnet18
 from transformers import ViTModel, ViTFeatureExtractor
 from resnet import ResNet, BasicBlock
+from taker import Model
 
 
 def ResNet18(num_classes):
@@ -177,25 +178,26 @@ class AllCNN(nn.Module):
 
 from transformers import ViTForImageClassification, AutoImageProcessor
 
-class ViT(nn.Module):
+class ViT():
     def __init__(self, num_classes=20, random_init:bool = False, **kwargs):
-        super(ViT, self).__init__()
         if random_init:
-            m = ViTForImageClassification.from_pretrained("nickypro/vit-cifar100-random-init")
+            m = Model("nickypro/vit-cifar100-random-init")
         else:
-            m = ViTForImageClassification.from_pretrained("nickypro/vit-cifar100")
+            m = Model("nickypro/vit-cifar100")
 
-        self.processor = AutoImageProcessor.from_pretrained("nickypro/vit-cifar100")
-        self.base = m.vit
-        self.final = m.classifier
+        self.taker_model = m
+        #AutoImageProcessor.from_pretrained("nickypro/vit-cifar100")
+        self.processor = m.processor
+        self.base  = m.predictor.vit
+        self.final = m.predictor.classifier
         self.num_classes = num_classes
         self.device = next(self.base.parameters()).device
         print("DEVICE:", self.device)
 
     def cuda(self, **kwargs):
-        new_self = super(ViT, self).cuda()
-        new_self.device = "cuda"
-        return new_self
+        self.taker_model.to("cuda")
+        self.device = "cuda"
+        return self
 
     def forward(self, pixel_values):
         #pixel_values = torch.tensor(np.array(
@@ -206,3 +208,13 @@ class ViT(nn.Module):
         logits = self.final(outputs.last_hidden_state[:, 0])
 
         return logits
+
+    def parameters(self):
+        return self.base.parameters()
+
+    def __call__(self, *args, **kwargs):
+        return self.forward(*args, **kwargs)
+
+    def eval(self):
+        self.base.eval()
+        self.final.eval()

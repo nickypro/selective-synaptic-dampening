@@ -11,6 +11,7 @@ seed=$2
 ################ CIFAR100 ROCKET FORGETTING #################
 #############################################################
 declare -a StringArray=("rocket" "mushroom" "baby" "lamp" "sea") # classes to iterate over
+#declare -a StringArray=("rocket") # classes to iterate over
 
 
 dataset=Cifar100
@@ -21,19 +22,21 @@ weight_path=checkpoint/ViT/Tuesday_09_January_2024_14h_53m_51s/ViT-Cifar100-8-be
 echo "starting the stuff"
 for val in "${StringArray[@]}"; do
     forget_class=$val
-    Run the Python script
-    CUDA_VISIBLE_DEVICES=$DEVICE poetry run python forget_full_class_main.py -net ViT -dataset $dataset -classes $n_classes -gpu -method baseline -forget_class $forget_class -weight_path $weight_path -seed $seed
-    reset_cuda
-    CUDA_VISIBLE_DEVICES=$DEVICE poetry run python forget_full_class_main.py -net ViT -dataset $dataset -classes $n_classes -gpu -method blindspot -forget_class $forget_class -weight_path $weight_path -seed $seed
-    reset_cuda
-    CUDA_VISIBLE_DEVICES=$DEVICE poetry run python forget_full_class_main.py -net ViT -dataset $dataset -classes $n_classes -gpu -method ssd_tuning -forget_class $forget_class -weight_path $weight_path -seed $seed
-    reset_cuda
-    CUDA_VISIBLE_DEVICES=$DEVICE poetry run python forget_full_class_main.py -net ViT -dataset $dataset -classes $n_classes -gpu -method finetune -forget_class $forget_class -weight_path $weight_path -seed $seed
-    reset_cuda
-    CUDA_VISIBLE_DEVICES=$DEVICE poetry run python forget_full_class_main.py -net ViT -dataset $dataset -classes $n_classes -gpu -method amnesiac -forget_class $forget_class -weight_path $weight_path -seed $seed
-    reset_cuda
-    CUDA_VISIBLE_DEVICES=$DEVICE poetry run python forget_full_class_main.py -net ViT -dataset $dataset -classes $n_classes -gpu -method UNSIR -forget_class $forget_class -weight_path $weight_path -seed $seed
-    reset_cuda
+    # Run the Python script
+    CUDA_VISIBLE_DEVICES=$DEVICE poetry run python forget_full_class_main.py -net ViT -dataset $dataset -classes $n_classes -gpu -method selective_pruning -forget_class $forget_class -weight_path $weight_path -seed $seed
+    # reset_cuda
+    # CUDA_VISIBLE_DEVICES=$DEVICE poetry run python forget_full_class_main.py -net ViT -dataset $dataset -classes $n_classes -gpu -method baseline -forget_class $forget_class -weight_path $weight_path -seed $seed
+    # reset_cuda
+    # CUDA_VISIBLE_DEVICES=$DEVICE poetry run python forget_full_class_main.py -net ViT -dataset $dataset -classes $n_classes -gpu -method blindspot -forget_class $forget_class -weight_path $weight_path -seed $seed
+    # reset_cuda
+    # CUDA_VISIBLE_DEVICES=$DEVICE poetry run python forget_full_class_main.py -net ViT -dataset $dataset -classes $n_classes -gpu -method ssd_tuning -forget_class $forget_class -weight_path $weight_path -seed $seed
+    # reset_cuda
+    # CUDA_VISIBLE_DEVICES=$DEVICE poetry run python forget_full_class_main.py -net ViT -dataset $dataset -classes $n_classes -gpu -method finetune -forget_class $forget_class -weight_path $weight_path -seed $seed
+    # reset_cuda
+    # CUDA_VISIBLE_DEVICES=$DEVICE poetry run python forget_full_class_main.py -net ViT -dataset $dataset -classes $n_classes -gpu -method amnesiac -forget_class $forget_class -weight_path $weight_path -seed $seed
+    # reset_cuda
+    # CUDA_VISIBLE_DEVICES=$DEVICE poetry run python forget_full_class_main.py -net ViT -dataset $dataset -classes $n_classes -gpu -method UNSIR -forget_class $forget_class -weight_path $weight_path -seed $seed
+    # reset_cuda
     # CUDA_VISIBLE_DEVICES=$DEVICE poetry run python forget_full_class_main.py -net ViT -dataset $dataset -classes $n_classes -gpu -method retrain -forget_class $forget_class -weight_path $weight_path -seed $seed
     # reset_cuda
 done

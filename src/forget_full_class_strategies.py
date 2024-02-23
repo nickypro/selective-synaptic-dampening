@@ -18,6 +18,7 @@ from unlearn import *
 from metrics import UnLearningScore, get_membership_attack_prob
 from utils import *
 import ssd as ssd
+import sp
 import conf
 import timeit
 import math
@@ -766,6 +767,32 @@ def ssd_tuning(
 
     # Dampen selected parameters
     pdr.modify_weight(original_importances, sample_importances)
+
+    return get_metric_scores(
+        model,
+        unlearning_teacher,
+        retain_train_dl,
+        retain_valid_dl,
+        forget_train_dl,
+        forget_valid_dl,
+        valid_dl,
+        device,
+    )
+
+def selective_pruning(
+        model,
+        unlearning_teacher,
+        retain_train_dl,
+        retain_valid_dl,
+        forget_train_dl,
+        forget_valid_dl,
+        valid_dl,
+        num_classes,
+        forget_class,
+        device,
+        **kwargs
+    ):
+    model = sp.run_selective_pruning(model, retain_train_dl, forget_train_dl)
 
     return get_metric_scores(
         model,
