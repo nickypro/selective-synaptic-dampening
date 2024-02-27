@@ -3,6 +3,7 @@ From https://github.com/vikram2000b/bad-teaching-unlearning
 And https://github.com/weiaicunzai/pytorch-cifar100 (better performance) <- Refer to this for comments
 """
 
+import copy
 from torch import nn
 import numpy as np
 import torch
@@ -212,9 +213,26 @@ class ViT():
     def parameters(self):
         return self.base.parameters()
 
+    def named_parameters(self):
+        return self.base.named_parameters()
+
     def __call__(self, *args, **kwargs):
         return self.forward(*args, **kwargs)
 
     def eval(self):
         self.base.eval()
         self.final.eval()
+
+    def train(self):
+        self.base.train()
+        self.final.train()
+
+    def __deepcopy__(self, memo):
+        # Create a deep copy of the class without the tensor
+        new_model = copy.copy(self)
+        new_model.taker_model = copy.deepcopy(self.taker_model, memo)
+        new_model.processor = new_model.taker_model.processor
+        new_model.base      = new_model.taker_model.vit
+        new_model.final     = new_model.taker_model.classifier
+        new_model.device    = next(new_model.base.parameters()).device
+        return new_model
