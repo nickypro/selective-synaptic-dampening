@@ -220,19 +220,21 @@ class ViT():
         return self.forward(*args, **kwargs)
 
     def eval(self):
-        self.base.eval()
-        self.final.eval()
+        self.base = self.base.eval()
+        self.final = self.final.eval()
+        return self
 
     def train(self):
-        self.base.train()
-        self.final.train()
+        self.base = self.base.train()
+        self.final = self.final.train()
+        return self
 
     def __deepcopy__(self, memo):
         # Create a deep copy of the class without the tensor
         new_model = copy.copy(self)
         new_model.taker_model = copy.deepcopy(self.taker_model, memo)
         new_model.processor = new_model.taker_model.processor
-        new_model.base      = new_model.taker_model.vit
-        new_model.final     = new_model.taker_model.classifier
+        new_model.base      = new_model.taker_model.predictor.vit
+        new_model.final     = new_model.taker_model.predictor.classifier
         new_model.device    = next(new_model.base.parameters()).device
         return new_model
