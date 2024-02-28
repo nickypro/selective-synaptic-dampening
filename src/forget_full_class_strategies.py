@@ -792,7 +792,7 @@ def selective_pruning(
         device,
         **kwargs
     ):
-    model = sp.run_selective_pruning(model, retain_train_dl, forget_train_dl)
+    model = sp.run_selective_pruning(model, retain_train_dl, forget_train_dl, kwargs["frac"])
 
     return get_metric_scores(
         model,

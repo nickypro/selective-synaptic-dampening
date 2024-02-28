@@ -69,6 +69,7 @@ def get_top_frac( values_tensor, top_frac: float ):
     return criteria, threshold
 
 def run_selective_pruning(model, retain_dl, forget_dl, frac=0.03):
+    print("selective pruning frac = ", frac)
     # collect activations
     retain_act = get_midlayer_activations(model, retain_dl)
     forget_act = get_midlayer_activations(model, forget_dl)
