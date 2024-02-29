@@ -12,7 +12,7 @@ from tqdm import tqdm
 
 def JSDiv(p, q):
     m = (p + q) / 2
-    return 0.5 * F.kl_div(torch.log(p), m) + 0.5 * F.kl_div(torch.log(q), m)
+    return 0.5 * F.kl_div(torch.log(p), m, reduction="batchmean") + 0.5 * F.kl_div(torch.log(q), m, reduction="batchmean")
 
 
 # ZRF/UnLearningScore https://arxiv.org/abs/2205.08096

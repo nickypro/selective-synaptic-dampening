@@ -270,7 +270,7 @@ kwargs = {
 
 # Logging
 wandb.init(
-    project=f"R3_{args.net}_{args.dataset}_fullclass_{args.forget_class}",
+    project=f"R4_{args.net}_{args.dataset}_fullclass_{args.forget_class}",
     entity="seperability",
     name=f"{args.method}",
 )

@@ -20,7 +20,7 @@ def UnlearnerLoss(
     # label 0 means retain sample
     overall_teacher_out = labels * u_teacher_out + (1 - labels) * f_teacher_out
     student_out = F.log_softmax(output / KL_temperature, dim=1)
-    return F.kl_div(student_out, overall_teacher_out)
+    return F.kl_div(student_out, overall_teacher_out, reduction="batchmean")
 
 
 def unlearning_step(
