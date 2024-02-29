@@ -11,7 +11,8 @@ seed=$2
 ################ CIFAR100 ROCKET FORGETTING #################
 #############################################################
 #declare -a StringArray=("rocket" "mushroom" "baby" "lamp" "sea") # classes to iterate over
-declare -a StringArray=("rocket") # classes to iterate over
+declare -a StringArray=("rocket", "mushroom") # classes to iterate over
+# declare -a StringArray=("mushroom") # classes to iterate over
 
 
 dataset=Cifar100
