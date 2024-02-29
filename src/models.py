@@ -238,6 +238,14 @@ class ViT():
         self.final = self.final.train()
         return self
 
+    def save(self, filename):
+        state_dict = {
+            **{f"base.{k}":  v.cpu() for k, v in self.base.state_dict().items()},
+            **{f"final.{k}": v.cpu() for k, v in self.final.state_dict().items()},
+        }
+        torch.save(state_dict, filename)
+
+
     def __deepcopy__(self, memo):
         # Create a deep copy of the class without the tensor
         new_model = copy.copy(self)

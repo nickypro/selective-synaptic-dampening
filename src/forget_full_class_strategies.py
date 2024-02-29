@@ -97,6 +97,12 @@ def get_metric_scores(
     valid_dl,
     device,
 ):
+
+    # Get the current UTC date and time as a string
+    from datetime import datetime
+    utc_date_string = datetime.utcnow().isoformat()
+
+    model.save(f"./saved_models/ViT-{utc_date_string}")
     loss_acc_dict = evaluate(model, valid_dl, device)
     retain_acc_dict = evaluate(model, retain_valid_dl, device)
     zrf = UnLearningScore(model, unlearning_teacher, forget_valid_dl, 128, device)

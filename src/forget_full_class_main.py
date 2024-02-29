@@ -14,7 +14,6 @@ from typing import Tuple, List
 import sys
 import argparse
 import time
-from datetime import datetime
 from copy import copy
 
 import numpy as np
@@ -266,7 +265,7 @@ kwargs = {
 
 # Logging
 wandb.init(
-    project=f"R2_{args.net}_{args.dataset}_fullclass_{args.forget_class}",
+    project=f"R3_{args.net}_{args.dataset}_fullclass_{args.forget_class}",
     entity="seperability",
     name=f"{args.method}",
 )
