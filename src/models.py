@@ -4,6 +4,7 @@ And https://github.com/weiaicunzai/pytorch-cifar100 (better performance) <- Refe
 """
 
 import copy
+import itertools
 from torch import nn
 import numpy as np
 import torch
@@ -211,10 +212,18 @@ class ViT():
         return logits
 
     def parameters(self):
-        return self.base.parameters()
+        p = [
+            self.base.parameters(),
+            self.final.parameters(),
+        ]
+        return itertools.chain(*p)
 
     def named_parameters(self):
-        return self.base.named_parameters()
+        p = [
+            self.base.named_parameters(),
+            self.final.named_parameters(),
+        ]
+        return itertools.chain(*p)
 
     def __call__(self, *args, **kwargs):
         return self.forward(*args, **kwargs)
