@@ -87,6 +87,8 @@ parser.add_argument(
         "FisherForgetting",
         "selective_pruning",
         "load_modified_base",
+        "load_modified_final",
+        "load_modified_both",
     ],
     help="select unlearning method from choice set",
 )

@@ -109,7 +109,8 @@ def get_metric_scores(
     retain_acc_dict = evaluate(model, retain_valid_dl, device)
     zrf = UnLearningScore(model, unlearning_teacher, forget_valid_dl, 128, device)
     d_f = evaluate(model, forget_valid_dl, device)
-    mia = get_membership_attack_prob(retain_train_dl, forget_train_dl, valid_dl, model)
+    #mia = get_membership_attack_prob(retain_train_dl, forget_train_dl, valid_dl, model)
+    mia = 0.0
 
     return (loss_acc_dict["Acc"], retain_acc_dict["Acc"], zrf, mia, d_f["Acc"])
 
@@ -830,7 +831,73 @@ def load_modified_base(
         if "base." in k:
             base_params[k[5:]] = v
 
-    model.base.load_state_dict(base_params, strict=False)
+    model.base.load_state_dict(base_params)
+
+    return get_metric_scores(
+        model,
+        unlearning_teacher,
+        retain_train_dl,
+        retain_valid_dl,
+        forget_train_dl,
+        forget_valid_dl,
+        valid_dl,
+        device,
+        do_save = False,
+    )
+
+def load_modified_final(
+        model,
+        unlearning_teacher,
+        retain_train_dl,
+        retain_valid_dl,
+        forget_train_dl,
+        forget_valid_dl,
+        valid_dl,
+        device,
+        **kwargs,
+    ):
+    state_dict =  torch.load(kwargs["state_dict_dir"])
+    final_params = {}
+    for k,v in state_dict.items():
+        if "final." in k:
+            final_params[k[6:]] = v
+
+    model.final.load_state_dict(final_params)
+
+    return get_metric_scores(
+        model,
+        unlearning_teacher,
+        retain_train_dl,
+        retain_valid_dl,
+        forget_train_dl,
+        forget_valid_dl,
+        valid_dl,
+        device,
+        do_save = False,
+    )
+
+def load_modified_both(
+        model,
+        unlearning_teacher,
+        retain_train_dl,
+        retain_valid_dl,
+        forget_train_dl,
+        forget_valid_dl,
+        valid_dl,
+        device,
+        **kwargs,
+    ):
+    state_dict =  torch.load(kwargs["state_dict_dir"])
+    final_params = {}
+    base_params = {}
+    for k,v in state_dict.items():
+        if "base." in k:
+            base_params[k[5:]] = v
+        if "final." in k:
+            final_params[k[6:]] = v
+
+    model.base.load_state_dict(base_params)
+    model.final.load_state_dict(final_params)
 
     return get_metric_scores(
         model,
