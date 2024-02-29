@@ -183,9 +183,9 @@ from transformers import ViTForImageClassification, AutoImageProcessor
 class ViT():
     def __init__(self, num_classes=20, random_init:bool = False, **kwargs):
         if random_init:
-            m = Model("nickypro/vit-cifar100-random-init")
+            m = Model("nickypro/vit-cifar100-random-init", dtype="fp32")
         else:
-            m = Model("nickypro/vit-cifar100")
+            m = Model("nickypro/vit-cifar100", dtype="fp32")
 
         self.taker_model = m
         #AutoImageProcessor.from_pretrained("nickypro/vit-cifar100")
