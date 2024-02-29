@@ -96,13 +96,15 @@ def get_metric_scores(
     forget_valid_dl,
     valid_dl,
     device,
+    do_save: bool = True
 ):
 
     # Get the current UTC date and time as a string
     from datetime import datetime
     utc_date_string = datetime.utcnow().isoformat()
 
-    model.save(f"./saved_models/ViT-{utc_date_string}")
+    if do_save:
+        model.save(f"./saved_models/ViT-{utc_date_string}")
     loss_acc_dict = evaluate(model, valid_dl, device)
     retain_acc_dict = evaluate(model, retain_valid_dl, device)
     zrf = UnLearningScore(model, unlearning_teacher, forget_valid_dl, 128, device)
@@ -809,4 +811,35 @@ def selective_pruning(
         forget_valid_dl,
         valid_dl,
         device,
+    )
+
+def load_modified_base(
+        model,
+        unlearning_teacher,
+        retain_train_dl,
+        retain_valid_dl,
+        forget_train_dl,
+        forget_valid_dl,
+        valid_dl,
+        device,
+        **kwargs,
+    ):
+    state_dict =  torch.load(kwargs["state_dict_dir"])
+    base_params = {}
+    for k,v in state_dict.items():
+        if "base." in k:
+            base_params[k[5:]] = v
+
+    model.base.load_state_dict(base_params, strict=False)
+
+    return get_metric_scores(
+        model,
+        unlearning_teacher,
+        retain_train_dl,
+        retain_valid_dl,
+        forget_train_dl,
+        forget_valid_dl,
+        valid_dl,
+        device,
+        do_save = False,
     )

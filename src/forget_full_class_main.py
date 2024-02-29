@@ -69,6 +69,7 @@ parser.add_argument("-b", type=int, default=64, help="batch size for dataloader"
 parser.add_argument("-warm", type=int, default=1, help="warm up training phase")
 parser.add_argument("-lr", type=float, default=0.1, help="initial learning rate")
 parser.add_argument("-frac", type=float, default=0.03, help="fraction of neurons so selectively prune")
+parser.add_argument("-state_dict_dir", type=str, default=None, help="choose modified base params to load")
 parser.add_argument(
     "-method",
     type=str,
@@ -85,6 +86,7 @@ parser.add_argument(
         "ssd_tuning",
         "FisherForgetting",
         "selective_pruning",
+        "load_modified_base",
     ],
     help="select unlearning method from choice set",
 )
@@ -261,6 +263,7 @@ kwargs = {
     "device": "cuda" if args.gpu else "cpu",
     "model_name": args.net,
     "frac": args.frac,
+    "state_dict_dir": args.state_dict_dir,
 }
 
 # Logging
