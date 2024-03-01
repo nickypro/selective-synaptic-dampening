@@ -96,7 +96,7 @@ def get_metric_scores(
     forget_valid_dl,
     valid_dl,
     device,
-    do_save: bool = True
+    do_save: bool = False
 ):
 
     # Get the current UTC date and time as a string
@@ -704,7 +704,7 @@ def UNSIR(
     )
     # impair step
     _ = fit_one_unlearning_cycle(
-        1, model, noisy_loader, retain_valid_dl, device=device, lr=0.0001
+        1, model, noisy_loader, retain_valid_dl, device=device, lr=0.001
     )
     # repair step
     other_samples = []
@@ -824,6 +824,8 @@ def load_modified_base(
         device,
         **kwargs,
     ):
+    import wandb
+    wandb.config.state_dict_dir = kwargs["state_dict_dir"]
     state_dict =  torch.load(kwargs["state_dict_dir"])
     base_params = {}
     for k,v in state_dict.items():
